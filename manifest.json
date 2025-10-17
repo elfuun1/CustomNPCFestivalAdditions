@@ -1,0 +1,20 @@
+{
+  "Name": "Custom NPC Festival Additions",
+  "Author": "elfuun",
+  "Version": "1.0.0-beta",
+  "Description": "Increased customization and addition of custom NPCs to festivals, events, and minigames.",
+  "UniqueID": "elfuun.CustomNPCFestivalAdditions",
+  "EntryDll": "CustomNPCFestivalAdditions.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [ "Nexus:37910" ],
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
+    },
+    {
+      "UniqueID": "PathosChild.ContentPatcher",
+      "IsRequired": false
+    }
+  ]
+}
