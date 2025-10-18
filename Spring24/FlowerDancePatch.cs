@@ -100,31 +100,57 @@ namespace CustomNPCFestivalAdditions.Spring24
                             
                         NPC? loveInterest = getMutualDispositionLoveInterest(actorList[populateIndex]);
                         int loveInterestIndex = actorList.FindIndex(NPC => NPC.Name == loveInterest?.Name);
-                            
                         if (loveInterest != null
+                        && actorList.Any(NPC => NPC.Name == actorList[populateIndex].loveInterest)
                         && hasCNFASpring24Sprite(actorList[populateIndex])
                         && hasCNFASpring24Sprite(actorList[loveInterestIndex]))
                         {
                             Random rnd = new Random();
                             int randomLine = rnd.Next(2);
-                            Monitor.Log($"{randomLine}", LogLevel.Warn);
                             switch (randomLine)
                             {
                                 case 1:
                                     poolLower.Add(actorList[populateIndex]);
                                     poolUpper.Add(actorList[loveInterestIndex]);
-                                    Monitor.Log($"Added {actorList[populateIndex].Name} to upper pool. Added {loveInterest.Name} to lower pool.", LogLevel.Warn);
+                                    Monitor.Log($"Added mutual pair of {actorList[populateIndex].Name} and {loveInterest.Name} randomly to the upper pool and lower pool, respectively.", LogLevel.Trace);
                                     actorList.Remove(actorList[loveInterestIndex]);
-                                    populateIndex++;
+                                    if (populateIndex < actorList.Count())
+                                        { populateIndex++; }
                                     break;
                                 case 0:
                                     poolUpper.Add(actorList[populateIndex]);
                                     poolLower.Add(actorList[loveInterestIndex]);
-                                    Monitor.Log($"Added {actorList[populateIndex].Name} to lower pool. Added {loveInterest.Name} to upper pool.", LogLevel.Warn);
+                                    Monitor.Log($"Added mutual pair of {actorList[populateIndex].Name} and {loveInterest.Name} randomly to the lower pool and upper pool, respectively.", LogLevel.Trace);
                                     actorList.Remove(actorList[loveInterestIndex]);
-                                    populateIndex++;
+                                        if (populateIndex < actorList.Count())
+                                        { populateIndex++; }
                                     break;
                             }
+                        }
+                        else if ((actorList[populateIndex].loveInterest == null 
+                                && hasCNFASpring24Sprite(actorList[populateIndex])) 
+                                || 
+                                (loveInterest != null
+                                && !actorList.Any(NPC => NPC.Name == actorList[populateIndex].loveInterest)
+                                && hasCNFASpring24Sprite(actorList[populateIndex])))
+                        {
+                            switch (poolLower.Count() - poolUpper.Count())
+                            {
+                                case < 0:
+                                    poolLower.Add(actorList[populateIndex]);
+                                    populateIndex++;
+                                    break;
+
+                                case 0:
+                                    poolUpper.Add(actorList[populateIndex]);
+                                    populateIndex++;
+                                    break;
+
+                                case > 0:
+                                    poolUpper.Add(actorList[populateIndex]);
+                                    populateIndex++;
+                                    break;
+                                }
                         }
                         //mutual love interest, one or both lack sprites
                         else if (getMutualDispositionLoveInterest(actorList[populateIndex]) != null)
@@ -140,32 +166,18 @@ namespace CustomNPCFestivalAdditions.Spring24
                                 if (poolLower.Count() < poolUpper.Count())
                                 {
                                     poolLower.Add(actorList[populateIndex]);
-                                    if (actorList.Count() < populateIndex && hasCNFASpring24Sprite(actorList[populateIndex + 1]))
-                                    {
-                                        poolUpper.Add(actorList[populateIndex + 1]);
-                                        populateIndex += 2;
-                                    }
-                                    else { populateIndex++; }
+                                    populateIndex++;
                                 }
                                 if (poolUpper.Count() < poolLower.Count())
                                 {
                                     poolUpper.Add(actorList[populateIndex]);
-                                    if (actorList.Count() < populateIndex && hasCNFASpring24Sprite(actorList[populateIndex + 1]))
-                                    {
-                                        poolLower.Add(actorList[populateIndex + 1]);
-                                        populateIndex += 2;
-                                    }
-                                    else { populateIndex++; }
+                                    populateIndex++;
+
                                 }
                                 if (poolUpper.Count() == poolLower.Count())
                                 {
                                     poolUpper.Add(actorList[populateIndex]);
-                                    if (actorList.Count() < populateIndex && hasCNFASpring24Sprite(actorList[populateIndex + 1]))
-                                    {
-                                        poolLower.Add(actorList[populateIndex + 1]);
-                                        populateIndex += 2;
-                                    }
-                                    else { populateIndex++; }
+                                    populateIndex++;
                                 }
                                 break;
                             }
@@ -197,6 +209,8 @@ namespace CustomNPCFestivalAdditions.Spring24
                 Monitor.Log($"Successfully added the following NPCs to the upper line dancer selection pool:" + string.Join(", ", poolUpper.Select(NPC => NPC.Name)), LogLevel.Trace);
 
                 //Set-up farmer pairings for dance
+
+                List<NPC> invalidatedDancers = new List<NPC>();
 
                 while (farmers.Count > 0)
                 {
@@ -296,6 +310,30 @@ namespace CustomNPCFestivalAdditions.Spring24
                             {
                                 Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} and {getMutualDispositionLoveInterest(upperDancer).Name} as {getMutualDispositionLoveInterest(upperDancer).Name} is not a valid member of the lower dancer pool. Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a mutual NPC Disposition \"love interest\".", LogLevel.Trace);
                                 {
+                                    Utilities.Shuffle(poolLower);
+                                    int ind = 0;
+                                    while (ind < poolLower.Count())
+                                    {
+                                        if (getMutualDispositionLoveInterest(poolLower[ind]) == null || !poolUpper.Any(NPC => NPC.Name == poolLower[ind].loveInterest))
+                                        {
+                                            upperline.Add(new NetDancePartner(upperDancer.Name));
+                                            lowerline.Add(new NetDancePartner(poolLower[ind].Name));
+                                            Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[ind].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
+
+                                            poolUpper.Remove(upperDancer);
+                                            int removeMember = poolLower.FindIndex(NPC => NPC.Name == poolLower[ind].Name);
+                                            poolLower.RemoveAt(removeMember);
+                                            break;
+                                        }
+                                        ind++;
+                                    }
+                                    if (ind == poolLower.Count())
+                                    {
+                                        Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner, as no other valid candidates exist in the lower pool. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                                        invalidatedDancers.Add(upperDancer);
+                                        poolUpper.Remove(upperDancer);
+                                    }
+                                    /*
                                     int reshuffle2 = 0;
 
                                     while (reshuffle2 < 6)
@@ -323,52 +361,40 @@ namespace CustomNPCFestivalAdditions.Spring24
                                         Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner after 6 attempts. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
                                         poolUpper.Remove(upperDancer);
                                     }
+                                    */
+
                                 }
                             }
                         }
-                    else
-                    {
-                        Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} as {upperDancer.Name} does not have a listed NPC Disposition \"Love Interest\". Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a mutual NPC Disposition \"love interest\".", LogLevel.Debug);
+                        else
                         {
-                            int reshuffle1 = 0;
-
-                            while (reshuffle1 < 12)
+                            Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} as {upperDancer.Name} does not have a listed NPC Disposition \"Love Interest\". Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a mutual NPC Disposition \"love interest\".", LogLevel.Debug);
+                            Utilities.Shuffle(poolLower);
+                            int ind = 0;
+                            while (ind < poolLower.Count())
                             {
-                                Utilities.Shuffle(poolLower);
-                                if (getMutualDispositionLoveInterest(poolLower[0]) != null && poolUpper.Any(NPC => NPC.Name == getMutualDispositionLoveInterest(poolLower[0]).Name))
-                                {
-                                    Monitor.Log($"Attempt {reshuffle1}: Attempted to make a pair between {upperDancer.Name} and {poolLower[0].Name}. Failed as {poolLower[0].Name} has a valid love interest {getMutualDispositionLoveInterest(poolLower[0]).Name} available for selection.");
-                                    reshuffle1++;
-                                    continue;
-                                }
-                                else if (getMutualDispositionLoveInterest(poolLower[0]) == null
-                                    && isPairBlackListed(upperDancer, poolLower[0]).Equals(false))
+                                if (getMutualDispositionLoveInterest(poolLower[ind]) == null || !poolUpper.Any(NPC => NPC.Name == poolLower[ind].loveInterest))
                                 {
                                     upperline.Add(new NetDancePartner(upperDancer.Name));
-                                    lowerline.Add(new NetDancePartner(poolLower[0].Name));
+                                    lowerline.Add(new NetDancePartner(poolLower[ind].Name));
+                                    Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[ind].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
 
                                     poolUpper.Remove(upperDancer);
-                                    Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[0].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
-                                    int removeMember = poolLower.FindIndex(NPC => NPC.Name == poolLower[0].Name);
+                                    int removeMember = poolLower.FindIndex(NPC => NPC.Name == poolLower[ind].Name);
                                     poolLower.RemoveAt(removeMember);
                                     break;
                                 }
-                                else if (getMutualDispositionLoveInterest(poolLower[0]) == null
-                                    && isPairBlackListed(upperDancer, poolLower[0]).Equals(true))
-                                {
-                                    Monitor.Log($"Attempt {reshuffle1 + 1}: Attempted to make a pair between {upperDancer.Name} and {poolLower[0].Name}. Failed as a pair consisting of {upperDancer.Name} and {poolLower[0].Name} is blacklisted, per configuration.");
-                                    reshuffle1++;
-                                    continue;
-                                }
+                                ind++;
                             }
-                            if (reshuffle1 == 12)
+                            if (ind == poolLower.Count())
                             {
-                                Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner after 12 attempts. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                                Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner, as no other valid candidates exist in the lower pool. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                                invalidatedDancers.Add(upperDancer);
                                 poolUpper.Remove(upperDancer);
+                            
                             }
                         }
                     }
-                }
                     else
                     {
                         int reshuffle2 = 0;
@@ -394,6 +420,7 @@ namespace CustomNPCFestivalAdditions.Spring24
                         if (reshuffle2 == 6)
                         {
                             Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner after 6 attempts. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                            invalidatedDancers.Add(upperDancer);
                             poolUpper.Remove(upperDancer);
                         }
                     }
@@ -410,7 +437,7 @@ namespace CustomNPCFestivalAdditions.Spring24
 
                 if (poolUpper.Any() | poolLower.Any())
                 {
-                    List<NPC> unselectedDancers = poolUpper.Concat(poolLower).ToList();
+                    List<NPC> unselectedDancers = poolUpper.Concat(poolLower).ToList().Concat(invalidatedDancers).ToList();
                     Monitor.Log($"After pair generation, the following NPCs were not selected to dance: {string.Join(", ", unselectedDancers.Select(n => n.Name))}.", LogLevel.Debug);
                 }
 

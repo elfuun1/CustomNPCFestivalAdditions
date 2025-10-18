@@ -1,7 +1,7 @@
 {
   "Name": "Custom NPC Festival Additions",
   "Author": "elfuun",
-  "Version": "1.0.0-beta",
+  "Version": "1.0.1",
   "Description": "Increased customization and addition of custom NPCs to festivals, events, and minigames.",
   "UniqueID": "elfuun.CustomNPCFestivalAdditions",
   "EntryDll": "CustomNPCFestivalAdditions.dll",

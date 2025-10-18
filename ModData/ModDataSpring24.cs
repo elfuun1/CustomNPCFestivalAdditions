@@ -45,7 +45,7 @@ namespace CustomNPCFestivalAdditions.ModData
             HasConflicts = false;
             Enabled = true;
         }
-        public Spring24CharacterWhitelist (ModData.Content content)
+        /*public Spring24CharacterWhitelist (ModData.Content content)
         {
             this.Source = "ContentPack";
             this.SourceContentPack = content.ContentPack;
@@ -56,7 +56,7 @@ namespace CustomNPCFestivalAdditions.ModData
             this.HasConflicts = false;
             this.Enabled = true;
 
-        }
+        } */
     }
     public class Spring24PairBlacklist
     {
