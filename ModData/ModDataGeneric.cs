@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Transactions;
 
@@ -13,28 +14,29 @@ namespace CustomNPCFestivalAdditions.ModData
 {
     public class RawCNFAContentPack : ICollection<Content>
     {
-        public int ContentsIndex;
-        public IContentPack ContentPack { get; }
+        public IContentPack? ContentPack { get; set; }
         public string Format { get; set; }
-        Content[] Contents { get; set; }
+        public Content[] Entries { get; set; }
 
-        private List<Content> _contents;
+        private List<Content> _entries;
 
-        public RawCNFAContentPack()
+        public RawCNFAContentPack(RawCNFAContentPack contentPack)
         {
-            _contents = new List<Content>();
+            this.Format = contentPack.Format;
+            this.Entries = contentPack.Entries;
+            _entries = contentPack.Entries.ToList<Content>();
         }
 
         //Sets up ICollection and relevant methods
         public Content this[int index]
         {
-            get { return (Content)_contents[index]; }
-            set { _contents[index] = value; }
+            get { return (Content)_entries[index]; }
+            set { _entries[index] = value; }
         }
         public bool Contains(Content content)
         {
             bool found = false;
-            foreach (Content ctnt in _contents)
+            foreach (Content ctnt in _entries)
             {
                 if (ctnt.Equals(content)) { found = true;}
             }
@@ -44,35 +46,36 @@ namespace CustomNPCFestivalAdditions.ModData
         {
             if(!Contains(content))
             {
-                _contents.Add(content);
+                _entries.Add(content);
             }
         }
         public void Clear()
-        { 
-            _contents.Clear(); 
+        {
+            _entries.Clear(); 
         }
         public void CopyTo(Content[] array, int arrayIndex)
         {
             if (array == null)
             { throw new ArgumentNullException("array"); }
-            for (int i = 0; i < _contents.Count; i++)
+            for (int i = 0; i < _entries.Count; i++)
             {
-                array[i + arrayIndex] = _contents[i];
+                array[i + arrayIndex] = _entries[i];
             }
         }
         public int Count
-        { get { return _contents.Count; } }
+        { get { return _entries.Count; } }
 
         public bool IsReadOnly { get { return false; } }
 
         public bool Remove(Content item)
         {
             bool result = false;
-            for (int i=0; i < _contents.Count; i++)
+            for (int i=0; i < _entries.Count; i++)
             {
-                Content cntnt = (Content)_contents[i];
+                Content cntnt = (Content)_entries[i];
                 if(new Content.ContentIDEquality().Equals(cntnt, item))
-                { _contents.RemoveAt(i);
+                {
+                    _entries.RemoveAt(i);
                     result = true;
                     break;
                 }
@@ -126,11 +129,12 @@ namespace CustomNPCFestivalAdditions.ModData
         public IContentPack ContentPack { get; }
         public virtual string ContentID { get; set; }
         public string ContentType { get; set; }
-        public string[] Fields {get; set;}
+
+        public Fields Fields {get; set;}
         public Content(Content thing)
         {
             this.ContentPack = thing.ContentPack;
-            this.ContentID = $"{thing.ContentPack.Manifest.UniqueID}/{thing.ContentPack.Manifest.Version.ToString()}/{thing.ContentType}";
+            this.ContentID = $"{thing.ContentPack.Manifest.UniqueID}-{thing.ContentPack.Manifest.Version.ToString()}-{thing.ContentType}";
             this.ContentType = thing.ContentType;
             this.Fields = thing.Fields;
 
@@ -209,6 +213,21 @@ internal class ModDataGeneric
                 return target.modData[key].Split(delimiter);
             }
             else { return null; }
+        }
+    }
+    public class Fields
+    {
+        public ModData.Spring24CharacterBlacklist? Spring24CharacterBlacklist { get; set; }
+        public ModData.Spring24PairBlacklist? Spring24PairBlacklist { get; set; }
+        public ModData.Spring24PairWhitelist? Spring24PairWhitelist { get; set; }
+        public ModData.Spring24Sprite? Spring24Sprite { get; set; }
+
+        public Fields (Fields fields)
+        {
+            this.Spring24PairBlacklist = fields.Spring24PairBlacklist;
+            this.Spring24Sprite = fields.Spring24Sprite;
+            this.Spring24PairWhitelist = fields.Spring24PairWhitelist;
+            this.Spring24CharacterBlacklist = fields.Spring24CharacterBlacklist;
         }
     }
 }

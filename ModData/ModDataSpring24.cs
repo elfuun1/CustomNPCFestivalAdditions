@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace CustomNPCFestivalAdditions.ModData
 {
@@ -26,9 +27,9 @@ namespace CustomNPCFestivalAdditions.ModData
             if (pairWhitelist.Source.Equals("ContentPack") && pairWhitelist.SourceContentPack != null)
             {
                 this.SourceContentPack = pairWhitelist.SourceContentPack;
-                this.ContentID = $"{pairWhitelist.SourceContentPack.Manifest.UniqueID}/{pairWhitelist.SourceContentPack.Manifest.Version.ToString()}/Spring24CharacterBlacklist/{UpperDancerName}&{LowerDancerName}";
+                this.ContentID = $"{pairWhitelist.SourceContentPack.Manifest.UniqueID}_{pairWhitelist.SourceContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
             }
-            else { this.ContentID = $"{pairWhitelist.Source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{UpperDancerName}&{LowerDancerName}"; }
+            else { this.ContentID = $"{pairWhitelist.Source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}"; }
             this.UpperDancerName = pairWhitelist.UpperDancerName;
             this.LowerDancerName = pairWhitelist.LowerDancerName;
             this.IsPositionStrict = pairWhitelist.IsPositionStrict;
@@ -37,7 +38,7 @@ namespace CustomNPCFestivalAdditions.ModData
         }
         public Spring24PairWhitelist(string source, string upperDancerName, string lowerDancerName, bool isPositionStrict)
         {
-            ContentID = $"{source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{upperDancerName}&{lowerDancerName}";
+            ContentID = $"{source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{upperDancerName}_{lowerDancerName}";
             Source = source;
             UpperDancerName = upperDancerName;
             LowerDancerName = lowerDancerName;
@@ -45,18 +46,24 @@ namespace CustomNPCFestivalAdditions.ModData
             HasConflicts = false;
             Enabled = true;
         }
-        /*public Spring24CharacterWhitelist (ModData.Content content)
+        public Spring24PairWhitelist (ModData.Content content)
         {
-            this.Source = "ContentPack";
-            this.SourceContentPack = content.ContentPack;
-            this.ContentID = $"{content.ContentPack.Manifest.UniqueID}/{content.ContentPack.Manifest.Version.ToString()}/Spring24CharacterBlacklist/{UpperDancerName}&{LowerDancerName}";
-            this.UpperDancerName = content.Fields.ToString();
-            this.LowerDancerName = content.Fields.ToString();
-            this.IsPositionStrict = bool.Parse(content.Fields.ToString());
-            this.HasConflicts = false;
-            this.Enabled = true;
-
-        } */
+            if(content.ContentType == "Spring24CharacterWhitelist" 
+                && content.Fields.Spring24PairWhitelist != null
+                && content.Fields.Spring24PairWhitelist.UpperDancerName != null
+                && content.Fields.Spring24PairWhitelist.LowerDancerName != null)
+            {
+                this.Source = "ContentPack";
+                this.SourceContentPack = content.ContentPack;
+                this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
+                this.UpperDancerName = content.Fields.Spring24PairWhitelist.UpperDancerName;
+                this.LowerDancerName = content.Fields.Spring24PairWhitelist.LowerDancerName;
+                this.IsPositionStrict = content.Fields.Spring24PairWhitelist.IsPositionStrict;
+                this.HasConflicts = false;
+                this.Enabled = true;
+            }
+            else { throw new ArgumentNullException(); }
+        }
     }
     public class Spring24PairBlacklist
     {
@@ -76,9 +83,9 @@ namespace CustomNPCFestivalAdditions.ModData
             if (pairBlacklist.Source.Equals("ContentPack") && pairBlacklist.SourceContentPack != null)
             {
                 this.SourceContentPack = pairBlacklist.SourceContentPack;
-                this.ContentID = $"{pairBlacklist.SourceContentPack.Manifest.UniqueID}/{pairBlacklist.SourceContentPack.Manifest.Version.ToString()}/Spring24CharacterBlacklist/{UpperDancerName}&{LowerDancerName}";
+                this.ContentID = $"{pairBlacklist.SourceContentPack.Manifest.UniqueID}_{pairBlacklist.SourceContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
             }
-            else { this.ContentID = $"{pairBlacklist.Source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{UpperDancerName}&{LowerDancerName}"; }
+            else { this.ContentID = $"{pairBlacklist.Source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}"; }
             this.UpperDancerName = pairBlacklist.UpperDancerName ;
             this.LowerDancerName = pairBlacklist.LowerDancerName ;
             this.IsPositionStrict = pairBlacklist.IsPositionStrict ;
@@ -87,14 +94,32 @@ namespace CustomNPCFestivalAdditions.ModData
         }
         public Spring24PairBlacklist(string source, string upperDancerName, string lowerDancerName, bool isPositionStrict)
         {
-            ContentID = $"{source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{upperDancerName}&{lowerDancerName}";
-            Source = source;
-            UpperDancerName = upperDancerName;
-            LowerDancerName = lowerDancerName;
-            IsPositionStrict = isPositionStrict;
-            HasConflicts = false;
-            Enabled = true;
-        } 
+            this.ContentID = $"{source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{upperDancerName}_{lowerDancerName}";
+            this.Source = source;
+            this.UpperDancerName = upperDancerName;
+            this.LowerDancerName = lowerDancerName;
+            this.IsPositionStrict = isPositionStrict;
+            this.HasConflicts = false;
+            this.Enabled = true;
+        }
+        public Spring24PairBlacklist(Content content)
+        {
+            if (content.ContentType == "Spring24PairBlacklist" 
+                && content.Fields.Spring24PairBlacklist != null
+                && content.Fields.Spring24PairBlacklist.UpperDancerName != null
+                && content.Fields.Spring24PairBlacklist.LowerDancerName != null)
+            {
+                this.Source = "ContentPack";
+                this.SourceContentPack = content.ContentPack;
+                this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
+                this.UpperDancerName = content.Fields.Spring24PairBlacklist.UpperDancerName;
+                this.LowerDancerName = content.Fields.Spring24PairBlacklist.LowerDancerName;
+                this.IsPositionStrict = content.Fields.Spring24PairBlacklist.IsPositionStrict;
+                this.HasConflicts = false;
+                this.Enabled = true;
+            }
+            else { throw new ArgumentNullException(); }
+        }
     }
     public class Spring24CharacterBlacklist
     {
@@ -110,9 +135,9 @@ namespace CustomNPCFestivalAdditions.ModData
             if (charBlacklist.Source.Equals("ContentPack") && charBlacklist.SourceContentPack != null)
             {
                 this.SourceContentPack = charBlacklist.SourceContentPack;
-                this.ContentID = $"{charBlacklist.SourceContentPack.Manifest.UniqueID}/{charBlacklist.SourceContentPack.Manifest.Version.ToString()}/Spring24CharacterBlacklist/{CharacterName}";
+                this.ContentID = $"{charBlacklist.SourceContentPack.Manifest.UniqueID}_{charBlacklist.SourceContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{CharacterName}";
             }
-            else { this.ContentID = $"{charBlacklist.Source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{CharacterName}"; }
+            else { this.ContentID = $"{charBlacklist.Source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{CharacterName}"; }
             this.Source = charBlacklist.Source;
             this.CharacterName = charBlacklist.CharacterName;
             this.HasConflicts = charBlacklist.HasConflicts;
@@ -120,11 +145,26 @@ namespace CustomNPCFestivalAdditions.ModData
         }
         public Spring24CharacterBlacklist(string source, string characterName)
         {
-            ContentID = $"{source}/{DateTime.Now.ToString()}/Spring24CharacterBlacklist/{characterName}";
+            ContentID = $"{source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{characterName}";
             Source = source;
             CharacterName = characterName;
             HasConflicts = false;
             Enabled = true;
+        }
+        public Spring24CharacterBlacklist(Content content)
+        {
+            if (content.ContentType == "Spring24CharacterBlacklist"
+                && content.Fields.Spring24CharacterBlacklist != null
+                && content.Fields.Spring24CharacterBlacklist.CharacterName != null)
+            {
+                this.Source = "ContentPack";
+                this.SourceContentPack = content.ContentPack;
+                this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{CharacterName}";
+                this.CharacterName = content.Fields.Spring24CharacterBlacklist.CharacterName;
+                this.HasConflicts = false;
+                this.Enabled = true;
+            }
+            else { throw new ArgumentNullException(); }
         }
     }
     public class Spring24Sprite
@@ -141,13 +181,31 @@ namespace CustomNPCFestivalAdditions.ModData
         {
 
             this.SourceContentPack = sprite.SourceContentPack;
-            this.ContentID = $"{sprite.Source}/{sprite.SourceContentPack.Manifest.UniqueID}/{sprite.SourceContentPack.Manifest.Version.ToString()}/Spring24Sprite/{CharacterName}";
+            this.ContentID = $"{sprite.Source}_{sprite.SourceContentPack.Manifest.UniqueID}_{sprite.SourceContentPack.Manifest.Version.ToString()}_Spring24Sprite_{CharacterName}";
             this.SpritesheetName = sprite.SpritesheetName;
             this.SpritesheetPath = sprite.SpritesheetPath;
             this.SpriteEnabled = sprite.SpriteEnabled;
             this.CharacterName = sprite.CharacterName;
         }
+        public Spring24Sprite(Content content)
+        {
+            if (content.ContentType == "Spring24Sprite"
+                && content.Fields.Spring24Sprite != null
+                && content.Fields.Spring24Sprite.SpritesheetPath != null
+                && content.Fields.Spring24Sprite.CharacterName != null)
+            {
+                this.Source = "ContentPack";
+                this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24Sprite_{CharacterName}";
+                this.SourceContentPack = content.ContentPack;
+                this.SpritesheetName = content.Fields.Spring24Sprite.SpritesheetName;
+                this.SpritesheetPath = content.Fields.Spring24Sprite.SpritesheetPath;
+                this.CharacterName = content.Fields.Spring24Sprite.CharacterName;
+            }
+            else { throw new ArgumentNullException(); }
+        }
     }
+
+    //old methods
     internal class ModDataSpring24
     {
         public static IMonitor Monitor;

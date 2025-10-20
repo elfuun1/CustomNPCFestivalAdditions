@@ -21,6 +21,7 @@ namespace CustomNPCFestivalAdditions
         public override void Entry(IModHelper helper)
         {
             helper.Events.GameLoop.GameLaunched += onLaunched;
+            helper.Events.GameLoop.SaveLoaded += SaveLoaded;
 
             Config = helper.ReadConfig<ModConfig>();
             Initialize.InitializeAll(Monitor, Helper, Config);
@@ -100,25 +101,52 @@ namespace CustomNPCFestivalAdditions
             }
         }*/
 
-        /*
+        
         public void SaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
             foreach(IContentPack contentPack in this.Helper.ContentPacks.GetOwned())
             {
+                Monitor.Log($"Reading CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author}.", LogLevel.Debug);
+                
                 if (!contentPack.HasFile("content.json"))
-                { Monitor.Log($"CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author} is missing a \"content.json\" file. Content pack will be skipped.", LogLevel.Warn); }
-                ModData.RawCNFAContentPack contentPackRawData = new ModData.RawCNFAContentPack();
-                foreach(ModData.RawCNFAContentPack.Content rawContent in contentPackRawData)
+                { 
+                    Monitor.Log($"CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author} is missing a \"content.json\" file. Content pack will be skipped.", LogLevel.Warn); 
+                    break; 
+                };
+                var contentPackRawData = this.Helper.Data.ReadJsonFile<RawCNFAContentPack>("content.json");
+                if(contentPackRawData != null)
                 {
-                    string ParseContentType = rawContent.ContentType;
-                    switch (ParseContentType)
+                    int contentIndex = 1;
+                    foreach (ModData.Content rawContent in contentPackRawData.Entries)
                     {
-                        case "Spring24PairWhitelist":
-                            Spring24PairWhitelist pairWhiteList = new Spring24PairWhitelist(rawContent);
-                            break;
+                        Monitor.Log($"Attempting to load entry {contentIndex}, content of {rawContent.ContentType} type.", LogLevel.Trace);
+                        switch (rawContent.ContentType)
+                        {
+                            case "Spring24PairWhitelist":
+                                if (rawContent.Fields.Spring24PairWhitelist != null)
+                                {
+                                    try
+                                    {
+                                        Spring24PairWhitelist pairWhiteList = new Spring24PairWhitelist(rawContent);
+                                        this.Helper.Data.WriteSaveData(rawContent.Fields.Spring24PairWhitelist.ContentID, $"{rawContent.Fields.Spring24PairWhitelist.ContentID}");
+
+                                    }
+                                    catch
+                                    {
+                                        Monitor.Log($"Could not load and save contents of content index {contentIndex}. Content will be skipped.");
+                                    }
+                                }
+                                break;
+                        }
+                        contentIndex++;
                     }
                 }
+                if (contentPackRawData == null)
+                {
+                    Monitor.Log($"Content pack does not contain any valid data and will be skipped.", LogLevel.Trace);
+                }
+               
             }
-        } */
+        } 
     }
 }
