@@ -12,6 +12,7 @@ using HarmonyLib;
 using CustomNPCFestivalAdditions.InterfaceManagers;
 using System.Diagnostics.Tracing;
 using CustomNPCFestivalAdditions.ModData;
+using System.Text.Json.Serialization;
 
 namespace CustomNPCFestivalAdditions
 {
@@ -27,7 +28,7 @@ namespace CustomNPCFestivalAdditions
             Initialize.InitializeAll(Monitor, Helper, Config);
 
             bool Kelly2892FlowerDancingLoaded = this.Helper.ModRegistry.IsLoaded("kelly2892.flower.dancing.harmony");
-            if (this.Helper.ModRegistry.IsLoaded("kelly2892.flower.dancing.harmony") == true) 
+            if (this.Helper.ModRegistry.IsLoaded("kelly2892.flower.dancing.harmony") == true)
             {
                 Monitor.Log($"Detected mod \"Flower Dancing\" by kelly2892. Ensuring this mod applies Spring 24 postfix after any CNFA harmony patches to ensure compatibility.");
             }
@@ -101,52 +102,63 @@ namespace CustomNPCFestivalAdditions
             }
         }*/
 
-        
+
         public void SaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            foreach(IContentPack contentPack in this.Helper.ContentPacks.GetOwned())
+            /*
+            Spring24PairWhitelist entry1 = new Spring24PairWhitelist("Manual", "Abigail", "Sebastian", true);
+            Fields fields1 = new Fields(entry1);
+            RawContent content1 = new RawContent(fields1);
+            RawCNFAContentPack testPack = new RawCNFAContentPack(content1);
+
+            this.Helper.Data.WriteJsonFile<RawCNFAContentPack>("testdata.json", testPack);
+            */
+            
+
+            foreach (IContentPack contentPack in this.Helper.ContentPacks.GetOwned())
             {
                 Monitor.Log($"Reading CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author}.", LogLevel.Debug);
-                
+
                 if (!contentPack.HasFile("content.json"))
-                { 
-                    Monitor.Log($"CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author} is missing a \"content.json\" file. Content pack will be skipped.", LogLevel.Warn); 
-                    break; 
-                };
-                var contentPackRawData = this.Helper.Data.ReadJsonFile<RawCNFAContentPack>("content.json");
-                if(contentPackRawData != null)
                 {
+                    Monitor.Log($"CNFA content pack {contentPack.Manifest.Name}, version {contentPack.Manifest.Version} by {contentPack.Manifest.Author} is missing a \"content.json\" file. Content pack will be skipped.", LogLevel.Warn);
+                    break;
+                }
+                else if (contentPack.HasFile("content.json"))
+                {
+                    RawCNFAContentPack contentPackRawData = contentPack.ReadJsonFile<RawCNFAContentPack>("content.json");
+                    if (contentPackRawData == null)
+                    { break; }
+
                     int contentIndex = 1;
-                    foreach (ModData.Content rawContent in contentPackRawData.Entries)
+                    foreach (ModData.RawContent rawContent in contentPackRawData.Entries)
                     {
                         Monitor.Log($"Attempting to load entry {contentIndex}, content of {rawContent.ContentType} type.", LogLevel.Trace);
                         switch (rawContent.ContentType)
                         {
                             case "Spring24PairWhitelist":
-                                if (rawContent.Fields.Spring24PairWhitelist != null)
-                                {
-                                    try
-                                    {
-                                        Spring24PairWhitelist pairWhiteList = new Spring24PairWhitelist(rawContent);
-                                        this.Helper.Data.WriteSaveData(rawContent.Fields.Spring24PairWhitelist.ContentID, $"{rawContent.Fields.Spring24PairWhitelist.ContentID}");
 
-                                    }
-                                    catch
-                                    {
-                                        Monitor.Log($"Could not load and save contents of content index {contentIndex}. Content will be skipped.");
-                                    }
+                                try
+                                {
+                                    Spring24PairWhitelist pairWhiteList = new Spring24PairWhitelist(rawContent);
+                                    this.Helper.Data.WriteSaveData(pairWhiteList.ContentID, pairWhiteList);
+
+                                    Spring24PairWhitelist retrieved = this.Helper.Data.ReadSaveData<Spring24PairWhitelist>($"{pairWhiteList.ContentID}");
+                                    Monitor.Log($"Whitelisted pair of {retrieved.LowerDancerName} + {retrieved.UpperDancerName} (position strict = {retrieved.IsPositionStrict}) retrieved from {pairWhiteList.SourceContentPack.Manifest.Name}.", LogLevel.Warn);
+
                                 }
+                                catch
+                                {
+                                    Monitor.Log($"Could not load and save contents of content index {contentIndex}. Content will be skipped.");
+                                }
+
                                 break;
                         }
                         contentIndex++;
                     }
                 }
-                if (contentPackRawData == null)
-                {
-                    Monitor.Log($"Content pack does not contain any valid data and will be skipped.", LogLevel.Trace);
-                }
-               
             }
-        } 
+        }
     }
 }
+
