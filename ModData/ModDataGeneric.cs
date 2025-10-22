@@ -8,21 +8,27 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Transactions;
 
 namespace CustomNPCFestivalAdditions.ModData
 {
+
     public class RawCNFAContentPack : ICollection<RawContent>
     {
+        [JsonIgnore]
         public IContentPack? ContentPack { get; set; }
+        [JsonPropertyName("Format")]
         public string Format { get; set; }
+        [JsonPropertyName("Entries")]
         public List<RawContent> Entries { get; set; }
 
         private List<RawContent> _entries;
 
         public RawCNFAContentPack(RawCNFAContentPack contentPack)
         {
+            this.ContentPack = contentPack.ContentPack;
             this.Format = contentPack.Format;
             this.Entries = contentPack.Entries;
             _entries = contentPack.Entries;
@@ -134,8 +140,11 @@ namespace CustomNPCFestivalAdditions.ModData
 
     public class RawContent : IEquatable<RawContent>
     {
+        [JsonIgnore]
         public IContentPack? ContentPack { get; }
+        [JsonPropertyName("ContentType")]
         public string ContentType { get; set; }
+        [JsonPropertyName("ContentFields")]
         public Fields ContentFields { get; set; }
 
         public RawContent(RawContent thing)
@@ -241,14 +250,26 @@ internal class ModDataGeneric
     public class Fields
     {
         //Generic Use Properties
+        [JsonIgnore]
         public bool? Enabled { get; set; }
+        [JsonIgnore]
         public bool? HasConflicts { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("CharacterName")]
         public string? CharacterName { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("SpritesheetPath")]
         public string? SpritesheetPath { get; set; }
-  
+
         //Spring24 Specific Properties
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("UpperDancerName")]
         public string? UpperDancerName { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("LowerDancerName")]
         public string? LowerDancerName { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("IsPositionStrict")]
         public bool? IsPositionStrict { get; set; }
 
         public Fields (Fields fields)

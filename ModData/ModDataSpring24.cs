@@ -6,11 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework.Graphics;
+using System.Text.Json.Serialization;
 
 namespace CustomNPCFestivalAdditions.ModData
 {
     public class Spring24PairWhitelist
     {
+        [JsonIgnore]
         public IContentPack? SourceContentPack { get; }
         public string ContentID { get; set; }
         public string Source { get; set; }
