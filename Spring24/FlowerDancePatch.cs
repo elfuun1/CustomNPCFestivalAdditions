@@ -14,6 +14,7 @@ using System.Threading.Tasks.Dataflow;
 using HarmonyLib;
 using CustomNPCFestivalAdditions.ModData;
 using System.Reflection;
+using CustomNPCFestivalAdditions.Models.Spring24;
 
 namespace CustomNPCFestivalAdditions.Spring24
 {
@@ -43,6 +44,32 @@ namespace CustomNPCFestivalAdditions.Spring24
                 List<Farmer> farmers = (from f in Game1.getOnlineFarmers()
                                         orderby f.UniqueMultiplayerID
                                         select f).ToList();
+
+                //Load all blacklists/whitelists
+                var pairBlacklistRaw = Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24PairBlacklist>("spring24pairblacklist").Data;
+                List<Spring24PairBlacklist> pairBlacklistModData = pairBlacklistRaw.FindAll(p => p.Enabled == true);
+                if (pairBlacklistModData.Count() > 0)
+                {
+                    Monitor.Log("List of all enabled blacklisted pairs from moddata:", LogLevel.Debug);
+                    foreach (Spring24PairBlacklist entry in pairBlacklistModData)
+                    {
+                        string positionStrict = (entry.IsPositionStrict) ? " (Position strict)" : "";
+                        Monitor.Log($"{entry.UpperDancerName} and {entry.LowerDancerName}" + positionStrict, LogLevel.Debug);
+                    }
+                }
+
+                var pairWhitelistRaw = Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24PairWhitelist>("spring24pairwhitelist").Data;
+                List<Spring24PairWhitelist> pairWhitelistModData = pairWhitelistRaw.FindAll(p => p.Enabled == true);
+                if (pairWhitelistModData.Count() > 0)
+                {
+                    Monitor.Log("List of all enabled blacklisted pairs from moddata:", LogLevel.Debug);
+                    foreach (Spring24PairWhitelist entry in pairWhitelistModData)
+                    {
+                        string positionStrict = (entry.IsPositionStrict) ? " (Position strict)" : "";
+                        Monitor.Log($"{entry.UpperDancerName} and {entry.LowerDancerName}", LogLevel.Warn);
+                    }
+                    Monitor.Log("Please note that all enabled whitelisted pairs bypass the character blacklist and pair blacklist.", LogLevel.Debug);
+                }
 
 
                 //Load and process character blacklist
@@ -221,67 +248,36 @@ namespace CustomNPCFestivalAdditions.Spring24
                         continue;
                     }
 
-                    //Removes farmer-farmer pairs from pool
+                    //Adds farmer-farmer pairs to dance lines and removes partner farmer from pool
                     if (f2.dancePartner.IsFarmer())
                     {
                         farmers.Remove(f2.dancePartner.TryGetFarmer());
+                        upperline.Add(new NetDancePartner(f2));
+                        lowerline.Add(new NetDancePartner(f2.dancePartner.TryGetFarmer()));
+                        Monitor.Log($"Made a pair of farmer {f2.Name} and farmer {f2.dancePartner.TryGetFarmer().Name}, and successfully entered pair into NetDancePartner.", LogLevel.Trace);
                     }
 
                     //Adds farmer-NPC pairs to dance lines and removes NPCs from dancer pools
                     try
                     {
-                        if (f2.dancePartner.GetGender() == Gender.Female)
+                        if (poolUpper.Contains(f2.dancePartner.TryGetVillager()))
                         {
                             upperline.Add(f2.dancePartner);
-                            if (f2.dancePartner.IsVillager())
-                            {
-                                poolUpper.Remove(f2.dancePartner.TryGetVillager());
-                            }
+                            poolUpper.Remove(f2.dancePartner.TryGetVillager());
                             lowerline.Add(new NetDancePartner(f2));
+                            Monitor.Log($"Made a pair of {f2.dancePartner.Value.Name} and farmer {f2.Name}, and successfully entered pair into NetDancePartner.", LogLevel.Trace);
                         }
-                        if (f2.dancePartner.GetGender() == Gender.Male)
+                        else if (poolLower.Contains(f2.dancePartner.TryGetVillager()))
                         {
                             lowerline.Add(f2.dancePartner);
-                            if (f2.dancePartner.IsVillager())
-                            {
-                                poolLower.Remove(f2.dancePartner.TryGetVillager());
-                            }
+                            poolLower.Remove(f2.dancePartner.TryGetVillager());
                             upperline.Add(new NetDancePartner(f2));
-                        }
-                        if (f2.dancePartner.GetGender() == Gender.Undefined)
-                        {
-                            if (Config.CNFAspring24AllowMixedGenderDanceLines.Equals(true) && hasCNFASpring24Sprite(f2.dancePartner))
-                            {
-                                if (poolLower.Contains(f2.dancePartner.TryGetVillager()))
-                                {
-                                    lowerline.Add(f2.dancePartner);
-                                    poolLower.Remove(f2.dancePartner.TryGetVillager());
-                                    upperline.Add(new NetDancePartner(f2));
-                                }
-                                if (poolUpper.Contains(f2.dancePartner.TryGetVillager()))
-                                {
-                                    upperline.Add(f2.dancePartner);
-                                    poolUpper.Remove(f2.dancePartner.TryGetVillager());
-                                    lowerline.Add(new NetDancePartner(f2));
-                                }
-                            }
-                            else
-                            {
-                                Monitor.Log($"Characters with \"undefined\" gender require that \"Mixed Gender Lines\" be enabled, and custom Spring 24 CNFA sprites to dance. Player {f2.Name} and {f2.dancePartner.GetCharacter().Name} will not be added to dance lines and will be skipped.", LogLevel.Warn);
-                                if (poolLower.Contains(f2.dancePartner.TryGetVillager()))
-                                {
-                                    poolLower.Remove(f2.dancePartner.TryGetVillager());
-                                }
-                                if (poolUpper.Contains(f2.dancePartner.TryGetVillager()))
-                                {
-                                    poolUpper.Remove(f2.dancePartner.TryGetVillager());
-                                }
-                            }
+                            Monitor.Log($"Made a pair of farmer {f2.Name} and {f2.dancePartner.Value.Name}, and successfully entered pair into NetDancePartner.", LogLevel.Trace);
                         }
                     }
                     catch (Exception e)
                     {
-                        Monitor.Log($"Failed to populate dancer pools. Exception: {e}", LogLevel.Debug);
+                        Monitor.Log($"Failed to populate dancer pools with farmer-NPC pairs. Exception: {e}", LogLevel.Debug);
                     }
                     Monitor.Log("All farmers successfully paired or skipped.", LogLevel.Trace);
                 }
@@ -291,12 +287,14 @@ namespace CustomNPCFestivalAdditions.Spring24
                 {
                     Utilities.Shuffle(poolUpper);
                     NPC upperDancer = poolUpper[0];
+                    NPC? mutualLoveInterest = getMutualDispositionLoveInterest(upperDancer);
 
                     if (Config.CNFAspring24RandomizeDancersInPairs.Equals(false))
                     {
                         if (getMutualDispositionLoveInterest(upperDancer) != null)
                         {
-                            if (poolLower.Any(NPC => NPC.Name == getMutualDispositionLoveInterest(upperDancer).Name) && isPairBlackListed(upperDancer, getMutualDispositionLoveInterest(upperDancer)).Equals(false))
+                            if (poolLower.Any(NPC => NPC.Name == getMutualDispositionLoveInterest(upperDancer).Name) 
+                                && isPairBlackListed(upperDancer, getMutualDispositionLoveInterest(upperDancer), pairBlacklistModData).Equals(false))
                             {
                                 upperline.Add(new NetDancePartner(upperDancer.Name));
                                 lowerline.Add(new NetDancePartner(getMutualDispositionLoveInterest(upperDancer).Name));
@@ -308,7 +306,7 @@ namespace CustomNPCFestivalAdditions.Spring24
                             }
                             else
                             {
-                                Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} and {getMutualDispositionLoveInterest(upperDancer).Name} as {getMutualDispositionLoveInterest(upperDancer).Name} is not a valid member of the lower dancer pool. Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a mutual NPC Disposition \"love interest\".", LogLevel.Trace);
+                                Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} and {getMutualDispositionLoveInterest(upperDancer).Name} as {getMutualDispositionLoveInterest(upperDancer).Name} is not a valid member of the lower dancer pool. Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a valid mutual NPC Disposition \"love interest\" in the upper dancer pool.", LogLevel.Trace);
                                 {
                                     Utilities.Shuffle(poolLower);
                                     int ind = 0;
@@ -333,99 +331,59 @@ namespace CustomNPCFestivalAdditions.Spring24
                                         invalidatedDancers.Add(upperDancer);
                                         poolUpper.Remove(upperDancer);
                                     }
-                                    /*
-                                    int reshuffle2 = 0;
-
-                                    while (reshuffle2 < 6)
-                                    {
-                                        Utilities.Shuffle(poolLower);
-                                        if (getMutualDispositionLoveInterest(poolLower[0]) == null && isPairBlackListed(upperDancer, poolLower[0]).Equals(false))
-                                        {
-                                            upperline.Add(new NetDancePartner(upperDancer.Name));
-                                            lowerline.Add(new NetDancePartner(poolLower[0].Name));
-                                            Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[0].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
-
-                                            poolUpper.Remove(upperDancer);
-                                            int removeMember = poolLower.FindIndex(NPC => NPC.Name == poolLower[0].Name);
-                                            poolLower.RemoveAt(removeMember);
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            Monitor.Log($"Attempt {reshuffle2}: Attempted to make a pair between {upperDancer.Name} and {poolLower[0].Name}. Failed.");
-                                            reshuffle2++;
-                                        }
-                                    }
-                                    if (reshuffle2 == 6)
-                                    {
-                                        Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner after 6 attempts. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
-                                        poolUpper.Remove(upperDancer);
-                                    }
-                                    */
-
                                 }
                             }
                         }
                         else
                         {
-                            Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} as {upperDancer.Name} does not have a listed NPC Disposition \"Love Interest\". Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a mutual NPC Disposition \"love interest\".", LogLevel.Debug);
-                            Utilities.Shuffle(poolLower);
-                            int ind = 0;
-                            while (ind < poolLower.Count())
-                            {
-                                if (getMutualDispositionLoveInterest(poolLower[ind]) == null || !poolUpper.Any(NPC => NPC.Name == poolLower[ind].loveInterest))
-                                {
-                                    upperline.Add(new NetDancePartner(upperDancer.Name));
-                                    lowerline.Add(new NetDancePartner(poolLower[ind].Name));
-                                    Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[ind].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
+                            Monitor.Log($"Could not make a mutual NPC Disposition \"Love Interest\" pair with {upperDancer.Name} as {upperDancer.Name} does not have a listed NPC Disposition \"Love Interest\". Will attempt to pair {upperDancer.Name} with a random lower dancer that lacks a valid mutual NPC Disposition \"love interest\" in the upper dancer pool.", LogLevel.Debug);
 
-                                    poolUpper.Remove(upperDancer);
-                                    int removeMember = poolLower.FindIndex(NPC => NPC.Name == poolLower[ind].Name);
-                                    poolLower.RemoveAt(removeMember);
-                                    break;
-                                }
-                                ind++;
-                            }
-                            if (ind == poolLower.Count())
+                            Utilities.Shuffle(poolLower);
+                            NPC unmatchedLowerDancer = poolLower.Find(p => getMutualDispositionLoveInterest(p) == null) 
+                                ?? poolLower.Find(p => !poolUpper.Contains(getMutualDispositionLoveInterest(p))) 
+                                ?? null;
+
+                            if (unmatchedLowerDancer != null && isPairBlackListed(upperDancer, unmatchedLowerDancer, pairBlacklistModData) == false)
                             {
-                                Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner, as no other valid candidates exist in the lower pool. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                                upperline.Add(new NetDancePartner(upperDancer.Name));
+                                lowerline.Add(new NetDancePartner(unmatchedLowerDancer.Name));
+                                Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {unmatchedLowerDancer.Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
+
+                                poolUpper.Remove(upperDancer);
+                                poolLower.Remove(unmatchedLowerDancer);
+                            }
+                            else
+                            {
+                                Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner, as no other valid candidates exist in the lower pool. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Trace);
                                 invalidatedDancers.Add(upperDancer);
                                 poolUpper.Remove(upperDancer);
-                            
                             }
                         }
                     }
                     else
                     {
-                        int reshuffle2 = 0;
+                        Utilities.Shuffle(poolLower);
+                        NPC unmatchedLowerDancer = poolLower.Find(p => getMutualDispositionLoveInterest(p) == null)
+                            ?? poolLower.Find(p => !poolUpper.Contains(getMutualDispositionLoveInterest(p)))
+                            ?? null;
 
-                        while (reshuffle2 < 6)
+                        if (unmatchedLowerDancer != null && isPairBlackListed(upperDancer, unmatchedLowerDancer, pairBlacklistModData) == false)
                         {
-                            Utilities.Shuffle(poolLower);
-                            if (isPairBlackListed(upperDancer, poolLower[0]).Equals(false))
-                            {
-                                upperline.Add(new NetDancePartner(upperDancer.Name));
-                                lowerline.Add(new NetDancePartner(poolLower[0].Name));
-                                Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {poolLower[0].Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
-                                poolUpper.Remove(upperDancer);
-                                poolLower.Remove(poolLower[0]);   
-                                break;
-                            }
-                            else
-                            {
-                                reshuffle2++;
-                                Monitor.Log($"Attempt {reshuffle2}: Attempted to make a pair between {upperDancer.Name} and {poolLower[0].Name}. Failed as a pair consisting of {upperDancer.Name} and {poolLower[0].Name} is blacklisted, per configuration.");
-                            }
+                            upperline.Add(new NetDancePartner(upperDancer.Name));
+                            lowerline.Add(new NetDancePartner(unmatchedLowerDancer.Name));
+                            Monitor.Log($"Randomly made a pair with {upperDancer.Name} and {unmatchedLowerDancer.Name} and successfully entered pair into NetDancePartner.", LogLevel.Trace);
+
+                            poolUpper.Remove(upperDancer);
+                            poolLower.Remove(unmatchedLowerDancer);
                         }
-                        if (reshuffle2 == 6)
+                        else
                         {
-                            Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner after 6 attempts. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Debug);
+                            Monitor.Log($"Failed to match {upperDancer.Name} with a random valid dance partner, as no other valid candidates exist in the lower pool. {upperDancer.Name} will be removed from dancer pools and skipped.", LogLevel.Trace);
                             invalidatedDancers.Add(upperDancer);
                             poolUpper.Remove(upperDancer);
                         }
                     }
                 }
-
 
                 //Determine selected pairs of dancers and remaining unselected NPCs (debugging aid- can be commented out later)
                 List<string> dancerPairs = new List<string>();
@@ -584,26 +542,27 @@ namespace CustomNPCFestivalAdditions.Spring24
             if (dancer.modData.ContainsKey("elfuun.CustomNPCFestivalAdditions/hasSpring24Sprite") && dancer.modData["elfuun.CustomNPCFestivalAdditions/hasSpring24Sprite"] == "true") { return true; }
             else { return false; }
         }
-        public static bool isPairBlackListed(NetDancePartner dancer, NetDancePartner partner)
+        //Pair blacklist validation via moddata
+        public static bool isPairBlackListed(NetDancePartner dancer, NetDancePartner partner, List<Spring24PairBlacklist> pairBlacklist)
         {
-            if (dancer.TryGetVillager().modData.ContainsKey("elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList")
-                && dancer.TryGetVillager().modData["elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList"].ToString().Split(",").Contains(partner.TryGetVillager().Name))
-            { return true; }
 
-            else if (partner.TryGetVillager().modData.ContainsKey("elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList")
-                && partner.TryGetVillager().modData["elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList"].ToString().Split(",").Contains(dancer.TryGetVillager().Name))
+            if (pairBlacklist.Any(p => p.UpperDancerName == dancer.Value.Name 
+                                    && p.LowerDancerName == partner.Value.Name))
             { return true; }
-
+            else if (pairBlacklist.Any(p => p.LowerDancerName == dancer.Value.Name 
+                                    && p.UpperDancerName == partner.Value.Name 
+                                    && p.IsPositionStrict == false))
+            { return true; }
             else { return false; }
         }
-        public static bool isPairBlackListed(NPC dancer, NPC partner)
+        public static bool isPairBlackListed(NPC upperDancer, NPC lowerDancer, List<Spring24PairBlacklist> pairBlacklist)
         {
-            if (dancer.modData.ContainsKey("elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList")
-                && dancer.modData["elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList"].ToString().Split(",").Contains(partner.Name))
+            if (pairBlacklist.Any(p => p.UpperDancerName == upperDancer.Name 
+                                    && p.LowerDancerName == lowerDancer.Name))
             { return true; }
-
-            else if (partner.modData.ContainsKey("elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList")
-                && partner.modData["elfuun.CustomNPCFestivalAdditions/Spring24PairBlackList"].ToString().Split(",").Contains(dancer.Name))
+            else if (pairBlacklist.Any(p => p.LowerDancerName == upperDancer.Name 
+                                         && p.UpperDancerName == lowerDancer.Name 
+                                         && p.IsPositionStrict == false))
             { return true; }
             else { return false; }
         }

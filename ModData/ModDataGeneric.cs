@@ -15,7 +15,7 @@ using System.Transactions;
 namespace CustomNPCFestivalAdditions.ModData
 {
 
-    public class RawCNFAContentPack : ICollection<RawContent>
+    public class RawCNFAContentPack
     {
         [JsonIgnore]
         public IContentPack? ContentPack { get; set; }
@@ -26,139 +26,39 @@ namespace CustomNPCFestivalAdditions.ModData
 
         private List<RawContent> _entries;
 
+        [JsonConstructor]
         public RawCNFAContentPack(RawCNFAContentPack contentPack)
         {
-            this.ContentPack = contentPack.ContentPack;
-            this.Format = contentPack.Format;
-            this.Entries = contentPack.Entries;
-            _entries = contentPack.Entries;
+            this.ContentPack = contentPack?.ContentPack;
+            this.Format = contentPack?.Format;
+            this.Entries = contentPack?.Entries;
+            _entries = contentPack?.Entries;
         }
-        public RawCNFAContentPack(RawContent content)
+        public RawCNFAContentPack() 
         {
-            this.Format = "0.0.0";
+            this.ContentPack = null;
+            this.Format = "";
             this.Entries = new List<RawContent>();
-            Entries.Add(content);
-            _entries = Entries;
+            _entries = new List<RawContent>();
         }
-
-        //Sets up ICollection and relevant methods
-        public RawContent this[int index]
-        {
-            get { return (RawContent)_entries[index]; }
-            set { _entries[index] = value; }
-        }
-        public bool Contains(RawContent content)
-        {
-            bool found = false;
-            foreach (RawContent ctnt in _entries)
-            {
-                if (ctnt.Equals(content)) { found = true;}
-            }
-            return found;
-        }
-        public void Add(RawContent content)
-        {
-            if(!Contains(content))
-            {
-                _entries.Add(content);
-            }
-        }
-        public void Clear()
-        {
-            _entries.Clear(); 
-        }
-        public void CopyTo(RawContent[] array, int arrayIndex)
-        {
-            if (array == null)
-            { throw new ArgumentNullException("array"); }
-            for (int i = 0; i < _entries.Count; i++)
-            {
-                array[i + arrayIndex] = _entries[i];
-            }
-        }
-        public int Count
-        { get { return _entries.Count; } }
-
-        public bool IsReadOnly { get { return false; } }
-
-        public bool Remove(RawContent item)
-        {
-            bool result = false;
-            for (int i=0; i < _entries.Count; i++)
-            {
-                RawContent cntnt = (RawContent)_entries[i];
-                if(new RawContent.ContentIDEquality().Equals(cntnt, item))
-                {
-                    _entries.RemoveAt(i);
-                    result = true;
-                    break;
-                }
-            }
-            return result;
-        }
-        //sets up IEnumerator and relevant methods
-        public IEnumerator<RawContent> GetEnumerator()
-        {
-            return new ContentEnumerator(this);
-        }
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new ContentEnumerator(this);
-        }
-        public class ContentEnumerator : IEnumerator<RawContent>
-        {
-            private RawCNFAContentPack _contentPack;
-            private int curIndex;
-            private RawContent curContent;
-            public ContentEnumerator(RawCNFAContentPack contentPack)
-            {
-                _contentPack = contentPack;
-                curIndex = -1;
-                curContent = default(RawContent);
-            }
-            public bool MoveNext()
-            {
-                if(++curIndex >= _contentPack.Count)
-                {
-                    return false;
-                }
-                else 
-                {
-                    curContent = _contentPack[curIndex];
-                }
-                return true;
-            }
-            public void Reset() { curIndex = -1;}
-            void IDisposable.Dispose() { }
-            public RawContent Current
-            { get { return curContent; } }
-            object IEnumerator.Current { get { return Current; } }
-
-        }
-
     }
 
     public class RawContent : IEquatable<RawContent>
     {
         [JsonIgnore]
-        public IContentPack? ContentPack { get; }
+        public IContentPack? ContentPack { get; set; }
         [JsonPropertyName("ContentType")]
         public string ContentType { get; set; }
         [JsonPropertyName("ContentFields")]
         public Fields ContentFields { get; set; }
 
+        [JsonConstructor]
         public RawContent(RawContent thing)
         {
-            this.ContentPack = thing.ContentPack;
-            this.ContentType = thing.ContentType;
-            this.ContentFields = thing.ContentFields;
+            this.ContentType = thing?.ContentType;
+            this.ContentFields = thing?.ContentFields;
         }
 
-        public RawContent(Fields testFields)
-        {
-            this.ContentType = "Manual";
-            this.ContentFields = testFields;
-        }
         public bool Equals(RawContent other)
         {
             if (new ContentIDEquality().Equals(this, other))
@@ -251,49 +151,41 @@ internal class ModDataGeneric
     {
         //Generic Use Properties
         [JsonIgnore]
-        public bool? Enabled { get; set; }
+        public bool? Enabled { get; set; } = true;
         [JsonIgnore]
-        public bool? HasConflicts { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? HasConflicts { get; set; } = false;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("CharacterName")]
-        public string? CharacterName { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? CharacterName { get; set; } = null;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("SpritesheetPath")]
-        public string? SpritesheetPath { get; set; }
+        public string? SpritesheetPath { get; set; } = null;
 
         //Spring24 Specific Properties
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("UpperDancerName")]
         public string? UpperDancerName { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("LowerDancerName")]
         public string? LowerDancerName { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         [JsonPropertyName("IsPositionStrict")]
-        public bool? IsPositionStrict { get; set; }
+        public bool? IsPositionStrict { get; set; } = null;
 
+        [JsonConstructor]
         public Fields (Fields fields)
         {
             //Generic Use Properties
             this.Enabled = true;
             this.HasConflicts = false;
-            this.CharacterName = fields.CharacterName ?? null;
-            this.SpritesheetPath = fields.SpritesheetPath ?? null;
+            
+            this.CharacterName = fields?.CharacterName;
+            this.SpritesheetPath = fields?.SpritesheetPath;
 
             //Spring24 Specific Properties
-            this.UpperDancerName = fields.UpperDancerName ?? null;
-            this.LowerDancerName = fields.LowerDancerName ?? null;
-            this.IsPositionStrict = fields.IsPositionStrict ?? false;
+            this.UpperDancerName = fields?.UpperDancerName;
+            this.LowerDancerName = fields?.LowerDancerName;
+            this.IsPositionStrict = fields?.IsPositionStrict;
         }
-        public Fields (Spring24PairWhitelist whitelist)
-        {
-            this.Enabled = true;
-            this.HasConflicts = false;
-            this.UpperDancerName = whitelist.UpperDancerName;
-            this.LowerDancerName = whitelist.LowerDancerName;
-            this.IsPositionStrict = whitelist.IsPositionStrict;
-        }
-
-
     }
 }

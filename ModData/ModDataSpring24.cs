@@ -10,10 +10,9 @@ using System.Text.Json.Serialization;
 
 namespace CustomNPCFestivalAdditions.ModData
 {
+    /*
     public class Spring24PairWhitelist
     {
-        [JsonIgnore]
-        public IContentPack? SourceContentPack { get; }
         public string ContentID { get; set; }
         public string Source { get; set; }
         public string UpperDancerName { get; set; }
@@ -21,15 +20,22 @@ namespace CustomNPCFestivalAdditions.ModData
         public bool IsPositionStrict { get; set; }
         public bool HasConflicts { get; set; }
         public bool Enabled { get; set; }
+
+        public Spring24PairWhitelist()
+        {
+            this.Source = "";
+            this.ContentID = "";
+            this.UpperDancerName = "";
+            this.LowerDancerName = "";
+            this.IsPositionStrict = false;
+            this.HasConflicts = false;
+            this.Enabled = true;
+        }
         public Spring24PairWhitelist(Spring24PairWhitelist pairWhitelist)
         {
             this.Source = pairWhitelist.Source;
-            if (pairWhitelist.Source.Equals("ContentPack") && pairWhitelist.SourceContentPack != null)
-            {
-                this.SourceContentPack = pairWhitelist.SourceContentPack;
-                this.ContentID = $"{pairWhitelist.SourceContentPack.Manifest.UniqueID}_{pairWhitelist.SourceContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
-            }
-            else { this.ContentID = $"{pairWhitelist.Source}_{DateTime.Now.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}"; }
+            if (pairWhitelist.Source == "ContentPack")
+            this.ContentID = pairWhitelist.ContentID;
             this.UpperDancerName = pairWhitelist.UpperDancerName;
             this.LowerDancerName = pairWhitelist.LowerDancerName;
             this.IsPositionStrict = pairWhitelist.IsPositionStrict;
@@ -52,9 +58,8 @@ namespace CustomNPCFestivalAdditions.ModData
                 && content.ContentFields.UpperDancerName != null
                 && content.ContentFields.LowerDancerName != null)
             {
+                this.ContentID = $"{content.ContentPack.Manifest.UniqueID.ToString()}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterWhitelist_{content.ContentFields.UpperDancerName}_{content.ContentFields.LowerDancerName}";
                 this.Source = "ContentPack";
-                this.SourceContentPack = content.ContentPack;
-                this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{UpperDancerName}_{LowerDancerName}";
                 this.UpperDancerName = content.ContentFields.UpperDancerName;
                 this.LowerDancerName = content.ContentFields.LowerDancerName;
                 this.IsPositionStrict = content.ContentFields.IsPositionStrict ?? false;
@@ -108,6 +113,7 @@ namespace CustomNPCFestivalAdditions.ModData
             {
                 this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24CharacterBlacklist_{content.ContentFields.UpperDancerName}_{content.ContentFields.LowerDancerName}";
                 this.Source = "ContentPack";
+                this.SourceContentPack = content.ContentPack ?? null;
                 this.UpperDancerName = content.ContentFields.UpperDancerName;
                 this.LowerDancerName = content.ContentFields.LowerDancerName;
                 this.IsPositionStrict = content.ContentFields.IsPositionStrict ?? false;
@@ -117,6 +123,7 @@ namespace CustomNPCFestivalAdditions.ModData
             else { throw new ArgumentNullException(); }
         }
     }
+    */
     public class Spring24CharacterBlacklist
     {
         public IContentPack? SourceContentPack;
@@ -159,7 +166,7 @@ namespace CustomNPCFestivalAdditions.ModData
     }
     public class Spring24Sprite
     {
-        public IContentPack SourceContentPack { get; }
+        public IContentPack? SourceContentPack { get; }
         public string Source { get; set; }
         public string ContentID { get; set; }
         public string SpritesheetPath { get; set; }
@@ -168,7 +175,6 @@ namespace CustomNPCFestivalAdditions.ModData
         //public NPC Character { get => Game1.getCharacterFromName(CharacterName);}
         public Spring24Sprite(Spring24Sprite sprite)
         {
-
             this.SourceContentPack = sprite.SourceContentPack;
             this.ContentID = $"{sprite.Source}_{sprite.SourceContentPack.Manifest.UniqueID}_{sprite.SourceContentPack.Manifest.Version.ToString()}_Spring24Sprite_{sprite.CharacterName}";
             this.SpritesheetPath = sprite.SpritesheetPath;
@@ -184,7 +190,7 @@ namespace CustomNPCFestivalAdditions.ModData
             {
                 this.Source = "ContentPack";
                 this.ContentID = $"{content.ContentPack.Manifest.UniqueID}_{content.ContentPack.Manifest.Version.ToString()}_Spring24Sprite_{CharacterName}";
-                this.SourceContentPack = content.ContentPack;
+                this.SourceContentPack = content.ContentPack ?? null;
                 this.SpritesheetPath = content.ContentFields.SpritesheetPath;
                 this.CharacterName = content.ContentFields.CharacterName;
             }
