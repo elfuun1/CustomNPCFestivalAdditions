@@ -46,8 +46,13 @@ namespace CustomNPCFestivalAdditions.Spring24
                                         select f).ToList();
 
                 //Load all blacklists/whitelists
+
                 var pairBlacklistRaw = Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24PairBlacklist>("spring24pairblacklist").Data;
                 List<Spring24PairBlacklist> pairBlacklistModData = pairBlacklistRaw.FindAll(p => p.Enabled == true);
+                
+
+                //Pair blacklist debug readout
+                /*
                 if (pairBlacklistModData.Count() > 0)
                 {
                     Monitor.Log("List of all enabled blacklisted pairs from moddata:", LogLevel.Debug);
@@ -57,9 +62,12 @@ namespace CustomNPCFestivalAdditions.Spring24
                         Monitor.Log($"{entry.UpperDancerName} and {entry.LowerDancerName}" + positionStrict, LogLevel.Debug);
                     }
                 }
-
+                */
                 var pairWhitelistRaw = Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24PairWhitelist>("spring24pairwhitelist").Data;
                 List<Spring24PairWhitelist> pairWhitelistModData = pairWhitelistRaw.FindAll(p => p.Enabled == true);
+
+                //Pair whitelist debug readout
+                /*
                 if (pairWhitelistModData.Count() > 0)
                 {
                     Monitor.Log("List of all enabled blacklisted pairs from moddata:", LogLevel.Debug);
@@ -70,31 +78,26 @@ namespace CustomNPCFestivalAdditions.Spring24
                     }
                     Monitor.Log("Please note that all enabled whitelisted pairs bypass the character blacklist and pair blacklist.", LogLevel.Debug);
                 }
+                */
 
-
-                //Load and process character blacklist
-                string[] charBlackList = Config.CNFAspring24NPCBlacklist.Split(", ");
-                foreach (NPC actor in __instance.actors)
-                {
-                    if (charBlackList.Contains(actor.Name))
-                    {
-                        actor.modData[$"elfuun.CustomNPCFestivalAdditions/isSpring24BlackListed"] = "true";
-                    }
-                    else
-                    {
-                        actor.modData[$"elfuun.CustomNPCFestivalAdditions/isSpring24BlackListed"] = "false";
-                    }
-                }
+                var charBlacklistRaw = Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24CharBlacklist>("spring24charblacklist").Data;
+                List<Spring24CharBlacklist> charBlacklistModData = charBlacklistRaw.FindAll(c => c.Enabled == true);
 
                 //Creates and populates list of actors that are datable and not children
                 List<NPC> actorList = new List<NPC>();
+                List<NPC> invalidatedDancers = new List<NPC>();
                 foreach (NPC actor in __instance.actors)
                 {
-                    if (actor.modData[$"elfuun.CustomNPCFestivalAdditions/isSpring24BlackListed"] == "true")
+                    if (!charBlacklistModData.Any(c => c.CharacterName == actor.Name) && actor.datable.Equals(true))
                     {
-                        Monitor.Log($"Did not add {actor.Name} to dancer pools, per blacklist.", LogLevel.Debug);
-                        continue;
+                        actorList.Add(actor);
                     }
+                    if (charBlacklistModData.Any(c => c.CharacterName == actor.Name) && actor.datable.Equals(true))
+                    {
+                        invalidatedDancers.Add(actor);
+                    }
+                    continue;
+                    /*
                     if (actor.datable.Equals(true))
                     {
                         IAssetName tryGetSprite = Helper.GameContent.ParseAssetName($"Characters/{actor.Name}_CNFASpring24");
@@ -104,12 +107,10 @@ namespace CustomNPCFestivalAdditions.Spring24
                         }
                         actorList.Add(actor);
                         continue;
-
                     }
+                    */
                 }
-
-                //Load and process pair blacklist
-                ModDataSpring24.updateModDataSpring24PairBlackList(actorList);
+                Monitor.Log("Did not add the following NPCs to the dancer pools, per character blacklist: " + string.Join(", ", invalidatedDancers.Select(c => c.Name)), LogLevel.Debug);
 
                 Utilities.Shuffle(actorList);
 
@@ -237,7 +238,7 @@ namespace CustomNPCFestivalAdditions.Spring24
 
                 //Set-up farmer pairings for dance
 
-                List<NPC> invalidatedDancers = new List<NPC>();
+
 
                 while (farmers.Count > 0)
                 {

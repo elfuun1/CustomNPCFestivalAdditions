@@ -19,7 +19,7 @@ namespace CustomNPCFestivalAdditions
         {
             EventPatched.Initialize(monitor, config);
             Utilities.Initialize(monitor, helper, config);
-            CNFAConsoleCommands.Initialize(helper);
+            CNFAConsoleCommands.Initialize(monitor, helper);
 
             ModData.ModDataSpring24.Initialize(monitor, config, helper);
             

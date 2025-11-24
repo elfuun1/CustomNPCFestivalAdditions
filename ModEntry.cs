@@ -63,6 +63,18 @@ namespace CustomNPCFestivalAdditions
                 (commands, args) => this.CNFA_TestSpring24(commands, args.AsSpan())
                 );
             */
+            helper.ConsoleCommands.Add
+                (
+                "CNFA_PrintLoadedContent", "Prints a list of loaded content to the console by content ID, based on inputed content type. If not content type is listed, defaults to printing all loaded content.",
+                CNFAConsoleCommands.CNFA_PrintLoadedContent);
+            helper.ConsoleCommands.Add
+                (
+                "CNFA_EnableContent", "Enables content, selected by content ID.",
+                CNFAConsoleCommands.CNFA_EnableContent);
+            helper.ConsoleCommands.Add
+                (
+                "CNFA_DisableContent", "Disables content, selected by content ID.",
+                CNFAConsoleCommands.CNFA_DisableContent);
 
         }
 
@@ -86,15 +98,24 @@ namespace CustomNPCFestivalAdditions
                 ?? new Models.Spring24.ModData_Spring24PairWhitelist();
             var spring24pairblacklist = this.Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24PairBlacklist>("spring24pairblacklist") 
                 ?? new Models.Spring24.ModData_Spring24PairBlacklist();
+            var spring24charblacklist = this.Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24CharBlacklist>("spring24charblacklist") 
+                ?? new Models.Spring24.ModData_Spring24CharBlacklist();
 
             //Process configurations from ModConfig
             Monitor.Log($"Reading CNFA configurations from ModConfig.json file.", LogLevel.Trace);
 
             //ModConfig.json - Spring24 data
-            string[] configSpring24PairBlacklistRaw = Config.CNFAspring24PairBlacklist.Split(",", StringSplitOptions.TrimEntries);
 
+            //string[] configSpring24PairWhitelistRaw = Config.
+            //ModConfig.json - Spring24PairBlacklist
+            string[] configSpring24PairBlacklistRaw = Config.CNFAspring24PairBlacklist.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             foreach (string entry in configSpring24PairBlacklistRaw)
             {
+                if (entry.Split("&", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Count() == 1)
+                { 
+                    Monitor.Log($"Could not load Spring24PairBlacklist entry {Array.IndexOf(configSpring24PairBlacklistRaw, entry)} from ModConfig file as the following input contains only one input: {entry}. Input will be skipped.", LogLevel.Debug); 
+                    continue; 
+                }
                 string upperDancer = entry.Split("&", 2, StringSplitOptions.TrimEntries)[0];
                 string lowerDancer = entry.Split("&", 2, StringSplitOptions.TrimEntries)[1];
 
@@ -111,9 +132,28 @@ namespace CustomNPCFestivalAdditions
                 {
                     string upperInputString = (ConfigurationValidator.nameInputValidator(upperDancer)) ? string.Empty : upperDancer;
                     string lowerInputString = (ConfigurationValidator.nameInputValidator(lowerDancer)) ? string.Empty : lowerDancer;
-                    Monitor.Log($"Could not load Spring24PairBlacklist entry {Array.IndexOf(configSpring24PairBlacklistRaw, entry)} from ModConfig file as the following input(s) are invalid: {upperInputString} {lowerInputString}. Input will be skipped.", LogLevel.Debug);
+                    Monitor.Log($"Could not load Spring24PairBlacklist entry {Array.IndexOf(configSpring24PairBlacklistRaw, entry)} from ModConfig file as the following input(s) are invalid: {upperInputString}, {lowerInputString}. Input will be skipped.", LogLevel.Debug);
                 }
             }
+
+            //ModConfig.json - Spring24PairWhitelist
+
+            //ModConfig.json - Spring24CharBlacklist
+            string[] configSpring24CharBlacklistRaw = Config.CNFAspring24NPCBlacklist.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            foreach (string entry in configSpring24CharBlacklistRaw)
+            {
+                bool character = ConfigurationValidator.nameInputValidator(entry);
+                if (character 
+                    && !spring24charblacklist.Data.Any(p => p.ContentID == $"ModConfig_Spring24CharBlacklist_{entry}")) //prevent duplicates from modconfig
+                {
+                    spring24charblacklist.Data.Add(new Models.Spring24.Spring24CharBlacklist("ModConfig", entry));
+                }
+                if (!character)
+                {
+                    Monitor.Log($"Could not load Spring24CharBlacklist entry {Array.IndexOf(configSpring24CharBlacklistRaw, entry)} from ModConfig file as the following input is invalid: {entry}. Input will be skipped.", LogLevel.Debug);
+                }
+            }
+
 
             //Process data from content packs
             foreach (IContentPack contentPack in this.Helper.ContentPacks.GetOwned())
@@ -160,7 +200,10 @@ namespace CustomNPCFestivalAdditions
                                         && ConfigurationValidator.nameInputValidator(rawContent.ContentFields.LowerDancerName))
                                     {
                                         Models.Spring24.Spring24PairWhitelist pairWhiteList = new Models.Spring24.Spring24PairWhitelist(rawContent);
-                                        spring24pairwhitelist.Data.Add(pairWhiteList);
+                                        if (!spring24pairwhitelist.Data.Any(p => p.ContentID == pairWhiteList.ContentID))
+                                        {
+                                            spring24pairwhitelist.Data.Add(pairWhiteList);
+                                        }
                                     }
                                 }
                                 catch(Exception eRead)
@@ -177,7 +220,10 @@ namespace CustomNPCFestivalAdditions
                                         && ConfigurationValidator.nameInputValidator(rawContent.ContentFields.LowerDancerName))
                                     {
                                         Models.Spring24.Spring24PairBlacklist pairBlackList = new Models.Spring24.Spring24PairBlacklist(rawContent);
-                                        spring24pairblacklist.Data.Add(pairBlackList);
+                                        if (!spring24charblacklist.Data.Any(p => p.ContentID == pairBlackList.ContentID))
+                                        {
+                                            spring24pairblacklist.Data.Add(pairBlackList);
+                                        }
                                     }
                                 }
                                 catch(Exception eRead)
@@ -186,6 +232,26 @@ namespace CustomNPCFestivalAdditions
                                     Monitor.Log($"Content {rawContent.ContentType}, Index {contentIndex} error: " + eRead, LogLevel.Trace);
                                 }
                                 break;
+
+                            case "Spring24CharBlacklist":
+                                try
+                                {
+                                    if (ConfigurationValidator.nameInputValidator(rawContent.ContentFields.CharacterName)) 
+                                    {
+                                        Models.Spring24.Spring24CharBlacklist charBlacklist = new Models.Spring24.Spring24CharBlacklist(rawContent);
+                                        if (!spring24charblacklist.Data.Any(c => c.ContentID == charBlacklist.ContentID))
+                                        {
+                                            spring24charblacklist.Data.Add(charBlacklist);
+                                        }
+                                    }
+                                }
+                                catch (Exception eRead)
+                                {
+                                    Monitor.Log($"Could not load and save contents of content entry index {contentIndex}, content of {rawContent.ContentType} type. Content will be skipped.", LogLevel.Debug);
+                                    Monitor.Log($"Content {rawContent.ContentType}, Index {contentIndex} error: " + eRead, LogLevel.Trace);
+                                }
+                                break;
+
                             default:
                                 Monitor.Log($"{rawContent.ContentType} is not a currently supported content type. Entry {contentIndex} will be skipped.", LogLevel.Debug);
                                 break;
@@ -196,6 +262,8 @@ namespace CustomNPCFestivalAdditions
             }
             this.Helper.Data.WriteSaveData("spring24pairwhitelist", spring24pairwhitelist);
             this.Helper.Data.WriteSaveData("spring24pairblacklist", spring24pairblacklist);
+            this.Helper.Data.WriteSaveData("spring24charblacklist", spring24charblacklist);
+
 
 
             //Testing below, comment out for release :)
@@ -213,6 +281,16 @@ namespace CustomNPCFestivalAdditions
             {
                 Monitor.Log($"List of retrieved blacklist pair entries by ContentID:", LogLevel.Warn);
                 foreach (Models.Spring24.Spring24PairBlacklist entry in retrieved2.Data)
+                {
+                    Monitor.Log($"{entry.ContentID}", LogLevel.Warn);
+                }
+            }
+
+            var retrieved3 = this.Helper.Data.ReadSaveData<Models.Spring24.ModData_Spring24CharBlacklist>("spring24charblacklist");
+            if (retrieved3.Data.Any())
+            {
+                Monitor.Log($"List of retrieved blacklist characters by ContentID:", LogLevel.Warn);
+                foreach (Models.Spring24.Spring24CharBlacklist entry in retrieved3.Data)
                 {
                     Monitor.Log($"{entry.ContentID}", LogLevel.Warn);
                 }

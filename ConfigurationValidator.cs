@@ -13,6 +13,8 @@ namespace CustomNPCFestivalAdditions
     {
       public static bool nameInputValidator(string name)
         {
+            if (string.IsNullOrEmpty(name)) 
+            { return false; }
             if (!NPC.TryGetData(name, out CharacterData data).Equals(false))
             { return true; }
             else
