@@ -7,13 +7,9 @@ using System.Threading.Tasks;
 
 namespace CustomNPCFestivalAdditions.Models.Spring24
 {
-    public class Spring24CharBlacklist
+    public class Spring24CharBlacklist : ContentModel
     {
-        public string ContentID { get; set; }
-        public string Source { get; set; }
         public string CharacterName { get; set; }
-        public bool HasConflicts { get; set; }
-        public bool Enabled { get; set; }
 
         public Spring24CharBlacklist()
         {

@@ -75,6 +75,11 @@ namespace CustomNPCFestivalAdditions
                 (
                 "CNFA_DisableContent", "Disables content, selected by content ID.",
                 CNFAConsoleCommands.CNFA_DisableContent);
+            helper.ConsoleCommands.Add
+                (
+                "CNFA_AddContent", "Adds new content.",
+                CNFAConsoleCommands.CNFA_AddContent
+                );
 
         }
 

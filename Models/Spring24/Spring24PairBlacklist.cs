@@ -8,15 +8,11 @@ using System.Threading.Tasks;
 
 namespace CustomNPCFestivalAdditions.Models.Spring24
 {
-    public class Spring24PairBlacklist
+    public class Spring24PairBlacklist : Spring24Pair
     {
-        public string ContentID { get; set; }
-        public string Source { get; set; }
         public string UpperDancerName { get; set; }
         public string LowerDancerName { get; set; }
-        public bool IsPositionStrict { get; set; }
-        public bool HasConflicts { get; set; }
-        public bool Enabled { get; set; }
+
         public Spring24PairBlacklist()
         {
             this.Source = "";
